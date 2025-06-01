@@ -6,7 +6,6 @@
 
 A NestJS library for managing asynchronous and synchronous messages with support for buses, handlers, channels, and consumers. This library simplifies building scalable and decoupled applications by facilitating robust message handling pipelines while ensuring flexibility and reliability.
 
----
 ## Documentation
 
 https://nestjstools.gitbook.io/nestjstools-messaging-docs
@@ -48,6 +47,8 @@ import { MessagingNatsExtensionModule, NatsChannelConfig } from "@nestjstools/me
         new NatsChannelConfig({
           name: 'nats-event',
           enableConsumer: true, // Enable if you want to consume messages
+          connectionUris: ['nats://localhost:4222'],
+          subscriberName: 'nats-core',
         }),
       ],
       debug: true, // Optional: Enable debugging for Messaging operations
@@ -112,12 +113,27 @@ export class CreateUserHandler implements IMessageHandler<CreateUser>{
    Once the message is published with the correct routing key, it will be automatically routed to the appropriate handler within the NestJS application.
 ---
 
-## Configuration options
+## Routing Strategy
 
-### NatsChannel
+Message routing behavior depends on the value of `subscriberName`:
 
-#### **NatsChannelConfig**
-Here's a revised and expanded version of your README section. I corrected grammar, clarified the description, and added the missing properties.
+* **Static Routing:**
+  If `subscriberName` is a specific subject (e.g., `'order.created'`), all messages will be published directly to that subject.
+
+* **Wildcard Routing:**
+  If `subscriberName` contains a wildcard (e.g., `'order.*'` or `'order.>'`), the system uses `message.messageRoutingKey` as the publish subject instead. This enables dynamic routing based on the actual message type or topic.
+
+### Example
+
+```ts
+// If subscriberName is 'order.*'
+subscriberName = 'order.*';
+message.messageRoutingKey = 'order.created';
+
+// The message will be published to 'order.created'
+```
+
+This strategy allows you to use a single subscriber to handle a range of message types dynamically.
 
 ---
 
@@ -134,5 +150,5 @@ Here's a revised and expanded version of your README section. I corrected gramma
 
 ---
 
-## Real world working example with RabbitMQ & Redis - but might be helpful to understand how it works
+### Real world working example with RabbitMQ & Redis - but might be helpful to understand how it works
 https://github.com/nestjstools/messaging-rabbitmq-example
