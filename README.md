@@ -39,13 +39,13 @@ import { MessagingNatsExtensionModule, NatsChannelConfig } from "@nestjstools/me
     MessagingModule.forRoot({
       buses: [
         {
-          name: 'nats-event.bus',
-          channels: ['nats-event'],
+          name: 'nats-message.bus',
+          channels: ['nats-message'],
         },
       ],
       channels: [
         new NatsChannelConfig({
-          name: 'nats-event',
+          name: 'nats-message',
           enableConsumer: true, // Enable if you want to consume messages
           connectionUris: ['nats://localhost:4222'],
           subscriberName: 'nats-core',
@@ -68,7 +68,7 @@ import { IMessageBus, MessageBus, RoutingMessage } from '@nestjstools/messaging'
 @Controller()
 export class AppController {
   constructor(
-    @MessageBus('nats-event.bus') private natsMessageBus: IMessageBus,
+    @MessageBus('nats-message.bus') private natsMessageBus: IMessageBus,
   ) {}
 
   @Get('/nats')
@@ -142,8 +142,8 @@ This strategy allows you to use a single subscriber to handle a range of message
 ### NatsChannel
 
 | **Property**         | **Description**                                                                 | **Default Value** |
-| -------------------- | ------------------------------------------------------------------------------- | ----------------- |
-| **`name`**           | The name of the NATS channel (e.g., `'nats-event'`).                            |                   |
+| -------------------- |---------------------------------------------------------------------------------| ----------------- |
+| **`name`**           | The name of the NATS channel (e.g., `'nats-message'`).                          |                   |
 | **`enableConsumer`** | Whether to enable message consumption (i.e., process incoming messages).        | `true`            |
 | **`connectionUris`** | An array of NATS server URIs to connect to (e.g., `['nats://localhost:4222']`). |                   |
 | **`subscriberName`** | A unique identifier for the subscriber (used in queue group subscriptions).     |                   |
