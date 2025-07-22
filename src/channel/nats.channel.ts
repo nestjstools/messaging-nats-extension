@@ -9,4 +9,11 @@ export class NatsChannel extends Channel<NatsChannelConfig> {
     super(config);
     this.client = connect({ servers: config.connectionUris });
   }
+
+  async onChannelDestroy(): Promise<void> {
+    const client = await this.client;
+    await client.drain();
+    await client.close();
+    return super.onChannelDestroy();
+  }
 }
