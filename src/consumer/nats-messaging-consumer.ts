@@ -8,11 +8,16 @@ import { NatsConnection } from 'nats';
 
 @Injectable()
 @MessageConsumer(NatsChannel)
-export class NatsMessagingConsumer implements IMessagingConsumer<NatsChannel>, OnApplicationShutdown {
+export class NatsMessagingConsumer
+  implements IMessagingConsumer<NatsChannel>, OnApplicationShutdown
+{
   private channel?: NatsChannel = undefined;
   private client?: NatsConnection = undefined;
 
-  async consume(dispatcher: ConsumerMessageDispatcher, channel: NatsChannel): Promise<void> {
+  async consume(
+    dispatcher: ConsumerMessageDispatcher,
+    channel: NatsChannel,
+  ): Promise<void> {
     this.channel = channel;
     this.client = await this.channel.client;
 
@@ -25,14 +30,22 @@ export class NatsMessagingConsumer implements IMessagingConsumer<NatsChannel>, O
         const headers = msg.headers ?? undefined;
 
         const deserialized = JSON.parse(msg.string());
-        dispatcher.dispatch(new ConsumerMessage(deserialized, headers?.get('messaging-routing-key') ?? msg.subject));
-      }
+        dispatcher.dispatch(
+          new ConsumerMessage(
+            deserialized,
+            headers?.get('messaging-routing-key') ?? msg.subject,
+          ),
+        );
+      },
     });
 
     return Promise.resolve();
   }
 
-  async onError(errored: ConsumerDispatchedMessageError, channel: NatsChannel): Promise<void> {
+  async onError(
+    errored: ConsumerDispatchedMessageError,
+    channel: NatsChannel,
+  ): Promise<void> {
     return Promise.resolve();
   }
 
