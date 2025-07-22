@@ -202,5 +202,9 @@ This strategy allows you to use a single subscriber to handle a range of message
 
 ---
 
+> **Note:** NATS supports many configurations for streams, consumers, and subjects. If this setup doesn’t fit your specific use case, you can create your own custom NATS channel — this package and repository provide base classes that you can fork and modify to suit your needs.
+
+
+
 ### Real world working example with RabbitMQ & Redis - but might be helpful to understand how it works
 https://github.com/nestjstools/messaging-rabbitmq-example
