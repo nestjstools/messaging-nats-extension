@@ -23,9 +23,11 @@ or
 ```bash
 yarn add @nestjstools/messaging @nestjstools/messaging-nats-extension
 ```
-## AmazonSQS Integration: Messaging Configuration Example
+## Nats Integration: Messaging Configuration Example
 
 ---
+
+### Simple Config for nats messaging
 
 ```typescript
 import { Module } from '@nestjs/common';
@@ -49,6 +51,48 @@ import { MessagingNatsExtensionModule, NatsChannelConfig } from "@nestjstools/me
           enableConsumer: true, // Enable if you want to consume messages
           connectionUris: ['nats://localhost:4222'],
           subscriberName: 'nats-core',
+        }),
+      ],
+      debug: true, // Optional: Enable debugging for Messaging operations
+    }),
+  ],
+})
+export class AppModule {}
+```
+
+### Config for Nats with JetStream
+
+```typescript
+import { Module } from '@nestjs/common';
+import { MessagingModule } from '@nestjstools/messaging';
+import { SendMessageHandler } from './handlers/send-message.handler';
+import { MessagingNatsExtensionModule, NatsJetStreamChannelConfig } from "@nestjstools/messaging-nats-extension";
+
+@Module({
+  imports: [
+    MessagingNatsExtensionModule, // Importing the Nats extension module
+    MessagingModule.forRoot({
+      buses: [
+        {
+          name: 'nats-message.bus',
+          channels: ['nats-channel-jetstream'],
+        },
+      ],
+      channels: [
+        new NatsJetStreamChannelConfig({
+          name: 'nats-channel-jetstream',                  // Unique channel name in your app
+          connectionUris: ['nats://localhost:4222'],       // URI of your NATS server
+          enableConsumer: true,                            // Enables message consumer
+          streamConfig: {
+            streamName: 'event-steam',                     // Name of the JetStream stream
+            deliverSubjects: ['my_app_command.*'],         // Subjects for stream
+            autoUpdate: true,                              // Allow stream config update at app startup
+          },
+          consumerConfig: {
+            durableName: 'nats-durable_name',              // Persistent consumer name (track offset)
+            subject: 'my_app_command.*',                   // Specific subject this consumer listens to
+            autoUpdate: true,                              // Allow consumer config update
+          },
         }),
       ],
       debug: true, // Optional: Enable debugging for Messaging operations
@@ -128,6 +172,14 @@ Message routing behavior depends on the value of `subscriberName`:
 ```ts
 // If subscriberName is 'order.*'
 subscriberName = 'order.*';
+message.messageRoutingKey = 'order.created';
+
+// The message will be published to 'order.created'
+```
+or JetStream
+```ts
+// If JetStream deliverSubjects is ['order.*']
+subject = 'order.*'; // from consumer
 message.messageRoutingKey = 'order.created';
 
 // The message will be published to 'order.created'
