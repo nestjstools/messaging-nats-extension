@@ -7,54 +7,99 @@ import {
 } from '@nestjstools/messaging';
 import { Injectable } from '@nestjs/common';
 import { NatsJetStreamChannel } from '../channel/nats-jet-stream.channel';
-import { AckPolicy, DeliverPolicy, RetentionPolicy, StorageType } from 'nats/lib/jetstream/jsapi_types';
+import {
+  AckPolicy,
+  DeliverPolicy,
+  RetentionPolicy,
+  StorageType as NatsStorageType,
+} from 'nats/lib/jetstream/jsapi_types';
+import { StorageType } from '../channel/nats-jet-stream-channel.config';
 
 @Injectable()
 @MessageConsumer(NatsJetStreamChannel)
-export class NatsJetStreamMessagingConsumer implements IMessagingConsumer<NatsJetStreamChannel> {
+export class NatsJetStreamMessagingConsumer
+  implements IMessagingConsumer<NatsJetStreamChannel>
+{
   private channel?: NatsJetStreamChannel = undefined;
 
-  async consume(dispatcher: ConsumerMessageDispatcher, channel: NatsJetStreamChannel): Promise<void> {
+  async consume(
+    dispatcher: ConsumerMessageDispatcher,
+    channel: NatsJetStreamChannel,
+  ): Promise<void> {
     this.channel = channel;
     const jsm = await channel.jetStreamManager();
     const js = await channel.jetStreamClient();
 
-    const durableName = `consumer_${channel.config.streamName}`;
-
     // Create stream if it doesn't exist
     try {
-      await jsm.streams.info(channel.config.streamName);
-    } catch {
-      await jsm.streams.add({
-        name: channel.config.streamName,
-        subjects: channel.config.deliverSubjects,
-        retention: RetentionPolicy.Workqueue,
-        max_msgs: channel.config.maxMsgs,
-        max_bytes: channel.config.maxBytes,
-        storage: StorageType.Memory,
-      });
+      await jsm.streams.info(channel.config.streamConfig.streamName);
+      // Stream exists — optionally update it
+      if (channel.config.streamConfig.autoUpdate) {
+        await jsm.streams.update(channel.config.streamConfig.streamName, {
+          subjects: channel.config.streamConfig.deliverSubjects,
+          max_msgs: channel.config.streamConfig.maxMsgs,
+          max_bytes: channel.config.streamConfig.maxBytes,
+        });
+      }
+    } catch (err) {
+      if (err.code === '404') {
+        // Stream does not exist — safe to create
+        await jsm.streams.add({
+          name: channel.config.streamConfig.streamName,
+          subjects: channel.config.streamConfig.deliverSubjects,
+          max_msgs: channel.config.streamConfig.maxMsgs,
+          max_bytes: channel.config.streamConfig.maxBytes,
+          retention: RetentionPolicy.Interest,
+          storage:
+            channel.config.streamConfig.storageType === StorageType.Memory
+              ? NatsStorageType.Memory
+              : NatsStorageType.File,
+        });
+      } else {
+        throw err; // Unexpected error — rethrow
+      }
     }
 
     // Create consumer if does not exists
     try {
-      await jsm.consumers.add(channel.config.streamName, {
-        durable_name: durableName,
-        filter_subject: channel.config.consumerSubject,
+      await jsm.consumers.add(channel.config.streamConfig.streamName, {
+        durable_name: channel.config.consumerConfig.durableName,
+        filter_subject: channel.config.consumerConfig.subject,
         ack_policy: AckPolicy.None,
         deliver_policy: DeliverPolicy.New,
       });
     } catch (e) {
+      if (
+        channel.config.consumerConfig.autoUpdate &&
+        channel.config.consumerConfig.durableName
+      ) {
+        await jsm.consumers.update(
+          channel.config.streamConfig.streamName,
+          channel.config.consumerConfig.durableName,
+          {
+            filter_subject: channel.config.consumerConfig.subject,
+          },
+        );
+      }
     }
 
     // Bind to that durable consumer
-    const consumer = await js.consumers.get(channel.config.streamName, durableName);
+    const consumer = await js.consumers.get(
+      channel.config.streamConfig.streamName,
+      channel.config.consumerConfig.durableName,
+    );
     const messages = await consumer.consume();
 
     async function consumeMessages() {
       for await (const msg of messages) {
         const headers = msg.headers ?? undefined;
         const deserialized = msg.json() as object;
-        await dispatcher.dispatch(new ConsumerMessage(deserialized, headers?.get('messaging-routing-key') ?? msg.subject));
+        await dispatcher.dispatch(
+          new ConsumerMessage(
+            deserialized,
+            headers?.get('messaging-routing-key') ?? msg.subject,
+          ),
+        );
       }
     }
 
@@ -63,7 +108,10 @@ export class NatsJetStreamMessagingConsumer implements IMessagingConsumer<NatsJe
     return Promise.resolve();
   }
 
-  async onError(errored: ConsumerDispatchedMessageError, channel: NatsJetStreamChannel): Promise<void> {
+  async onError(
+    errored: ConsumerDispatchedMessageError,
+    channel: NatsJetStreamChannel,
+  ): Promise<void> {
     return Promise.resolve();
   }
 }

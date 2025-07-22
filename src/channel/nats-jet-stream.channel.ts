@@ -1,5 +1,10 @@
 import { Channel } from '@nestjstools/messaging';
-import { connect, JetStreamClient, JetStreamManager, NatsConnection } from 'nats';
+import {
+  connect,
+  JetStreamClient,
+  JetStreamManager,
+  NatsConnection,
+} from 'nats';
 import { NatsJetStreamChannelConfig } from './nats-jet-stream-channel.config';
 
 export class NatsJetStreamChannel extends Channel<NatsJetStreamChannelConfig> {

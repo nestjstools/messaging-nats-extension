@@ -1,5 +1,5 @@
 import { NatsChannel } from './nats.channel';
-import {Injectable} from "@nestjs/common";
+import { Injectable } from '@nestjs/common';
 import { ChannelFactory, IChannelFactory } from '@nestjstools/messaging';
 import { NatsChannelConfig } from './nats-channel.config';
 
