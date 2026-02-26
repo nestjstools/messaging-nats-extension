@@ -2,13 +2,25 @@
     <image src="nestjstools-logo.png" width="400">
 </p>
 
-# @nestjstools/messaging-nats-extension
+# NestJS NATS Messaging Extension – High-Performance Message Bus for Distributed Systems
 
-A NestJS library for managing asynchronous and synchronous messages with support for buses, handlers, channels, and consumers. This library simplifies building scalable and decoupled applications by facilitating robust message handling pipelines while ensuring flexibility and reliability.
+A production-ready NATS transport adapter for the **NestJSTools Messaging Library**, enabling high-performance, event-driven, and distributed architectures in NestJS applications.
+
+This extension allows you to use **NATS** as a messaging channel inside the NestJSTools Messaging ecosystem, with full support for message buses, routing keys, handlers, consumers, and middleware.
+
+Designed for:
+
+* High-performance microservices
+* Event-driven NestJS systems
+* Real-time distributed systems
+* Cloud-native or on-prem NATS deployments
+
+---
 
 ## Documentation
 
-https://nestjstools.gitbook.io/nestjstools-messaging-docs
+* https://docs.nestjstools.com/messaging
+* https://nestjstools.com
 
 ---
 

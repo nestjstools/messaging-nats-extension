@@ -1,28 +1,29 @@
 import { NatsChannel } from '../channel/nats.channel';
-import { ConsumerMessage, IMessagingConsumer } from '@nestjstools/messaging';
-import { ConsumerMessageDispatcher } from '@nestjstools/messaging';
+import {
+  ConsumerMessage,
+  IMessagingConsumer,
+  MessageConsumer,
+  ConsumerDispatchedMessageError, ConsumerMessageBus,
+} from '@nestjstools/messaging';
 import { Injectable, OnApplicationShutdown } from '@nestjs/common';
-import { MessageConsumer } from '@nestjstools/messaging';
-import { ConsumerDispatchedMessageError } from '@nestjstools/messaging';
 import { NatsConnection } from 'nats';
 
 @Injectable()
 @MessageConsumer(NatsChannel)
 export class NatsMessagingConsumer
-  implements IMessagingConsumer<NatsChannel>, OnApplicationShutdown
-{
+  implements IMessagingConsumer<NatsChannel>, OnApplicationShutdown {
   private channel?: NatsChannel = undefined;
   private client?: NatsConnection = undefined;
 
   async consume(
-    dispatcher: ConsumerMessageDispatcher,
+    dispatcher: ConsumerMessageBus,
     channel: NatsChannel,
   ): Promise<void> {
     this.channel = channel;
     this.client = await this.channel.client;
 
     this.client.subscribe(channel.config.subscriberName, {
-      callback: (err, msg) => {
+      callback: async (err, msg) => {
         if (err) {
           throw new Error(`Nats error ${err.message}`);
         }
@@ -30,7 +31,7 @@ export class NatsMessagingConsumer
         const headers = msg.headers ?? undefined;
 
         const deserialized = JSON.parse(msg.string());
-        dispatcher.dispatch(
+        await dispatcher.dispatch(
           new ConsumerMessage(
             deserialized,
             headers?.get('messaging-routing-key') ?? msg.subject,

@@ -1,7 +1,7 @@
 import {
   ConsumerDispatchedMessageError,
   ConsumerMessage,
-  ConsumerMessageDispatcher,
+  ConsumerMessageBus,
   IMessagingConsumer,
   MessageConsumer,
 } from '@nestjstools/messaging';
@@ -18,12 +18,11 @@ import { StorageType } from '../channel/nats-jet-stream-channel.config';
 @Injectable()
 @MessageConsumer(NatsJetStreamChannel)
 export class NatsJetStreamMessagingConsumer
-  implements IMessagingConsumer<NatsJetStreamChannel>
-{
+  implements IMessagingConsumer<NatsJetStreamChannel> {
   private channel?: NatsJetStreamChannel = undefined;
 
   async consume(
-    dispatcher: ConsumerMessageDispatcher,
+    dispatcher: ConsumerMessageBus,
     channel: NatsJetStreamChannel,
   ): Promise<void> {
     this.channel = channel;
